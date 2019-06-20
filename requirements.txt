@@ -10,3 +10,4 @@ spacy==2.1.4
 langdetect==1.0.7
 scikit_learn==0.21.2
 pyspellchecker==0.4
+cloudpickle==1.2.1
