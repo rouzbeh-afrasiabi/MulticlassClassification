@@ -104,7 +104,7 @@ def go():
     query = request.args.get('query', '')
     to_predict=pd.DataFrame()
     to_predict['message']=np.array([query])
-    vec,_,tokens,_=doc2vec(to_predict.message.values,[0],nlp)
+    vec,vec_w,_,tokens,_=doc2vec(to_predict.message.values,[0],nlp)
     predicted_a,predicted_p = model.oracle(vec)
     res_df = pd.DataFrame() 
     res_df['cat.']=model.category_names

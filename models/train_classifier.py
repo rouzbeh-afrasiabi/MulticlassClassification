@@ -22,7 +22,7 @@ from sklearn.tree import ExtraTreeClassifier
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.metrics import classification_report
 from sklearn import metrics
-from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import GridSearchCV,train_test_split
 from sklearn.preprocessing import MultiLabelBinarizer
 
 #following should be installed
@@ -95,13 +95,20 @@ def remove_punct(target):
     output=target.translate(str.maketrans(string.punctuation,
                  ' ' * len(string.punctuation))).replace(' '*4, ' ').replace(' '*3, ' ').replace(' '*2, ' ').strip()
     return(output)
-
+    
+def trp(doc,n,pad=['@PAD@']):
+    l=[token  for token in doc if token.has_vector]
+    pad_trunc=list(l[:n])+list(pad)*(n-len(l))
+    return(pad_trunc)
+    
 def doc2vec(target_docs,target_categories,nlp):
     spacy_stopwords = spacy.lang.en.stop_words.STOP_WORDS
-    output=[]
+    doc_vec=[]
+    word_vec=[]
     delete_index=[]
     cleaned_docs=[]
     all_removed_tokens=[]
+    _pad=nlp("@PAD@")
     print('Processing started...')
     for i,input_string in enumerate(list(target_docs)):
         string=str.lower(input_string)
@@ -129,20 +136,21 @@ def doc2vec(target_docs,target_categories,nlp):
         if(len(new_string)<1):
             new_string="unknown"
         new_doc = nlp(new_string)
+        #30 is the sequence length 
+        word_vec.append([token.vector for token in trp(new_doc,30,pad=_pad)])
         cleaned_docs.append(new_string)
         if(not new_doc.has_vector):
             delete_index.append(i)
             print('empty document vector for record ',i,' ', doc)
         else:
-            output.append(new_doc.vector)
+            doc_vec.append(new_doc.vector)
         if((i+1)%1000==0 and i>0):
             print(i+1,' records processed')
+    word_vec_flat=word_vec.reshape(np.array(word_vec).shape[0],-1)
     new_categories=np.delete(target_categories, delete_index,axis=0)
     print('Finished!!')
-    return(output,new_categories,cleaned_docs,all_removed_tokens)
+    return(doc_vec,word_vec_flat,new_categories,cleaned_docs,all_removed_tokens)
 
-def tokenize(text):
-    pass
 # def save(filepath):
 #     if(filepath):
 #         try:
@@ -262,9 +270,10 @@ def main():
             nlp = spacy.load("en_vectors_web_lg")
             print('Language model loaded.')
             print('Processing data ...')
-            X_vec,Y_vec,X_old_cleaned,all_removed_tokens=doc2vec(X,Y,nlp)
+            X_vec,X_vec_w,Y_vec,X_old_cleaned,all_removed_tokens=doc2vec(X,Y,nlp)
             X_train_vec, X_test_vec, y_train_vec, y_test_vec = train_test_split(X_vec, Y_vec, test_size=0.2,random_state=random_state)
             np.save(data_path+'X_vec.npy',X_vec)
+            np.save(data_path+'X_vec_w.npy',X_vec_w)
             np.save(data_path+'Y_vec.npy',Y_vec)
             np.save(data_path+'X_train_vec.npy',X_train_vec)
             np.save(data_path+'y_train_vec.npy',y_train_vec)
