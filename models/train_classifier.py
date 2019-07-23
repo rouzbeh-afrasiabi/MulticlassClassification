@@ -3,9 +3,14 @@ import os
 import pandas as pd
 import numpy as np
 from sqlalchemy import create_engine
-
+sys.path.append('../')
 import spacy
-import en_vectors_web_lg
+
+try:
+    nlp = spacy.load("en_vectors_web_lg")
+except:
+    os.system("pip install https://github.com/explosion/spacy-models/releases/download/en_vectors_web_lg-2.1.0/en_vectors_web_lg-2.1.0.tar.gz")
+
 from pycm import *
 from langdetect import detect
 from langdetect import detect_langs
@@ -18,6 +23,7 @@ from sklearn.multiclass import OneVsRestClassifier
 from sklearn.metrics import classification_report
 from sklearn import metrics
 from sklearn.model_selection import GridSearchCV
+from sklearn.preprocessing import MultiLabelBinarizer
 
 #following should be installed
 #'https://github.com/explosion/spacy-models/releases/download/en_vectors_web_lg-2.1.0/en_vectors_web_lg-2.1.0.tar.gz'
@@ -137,7 +143,25 @@ def doc2vec(target_docs,target_categories,nlp):
 
 def tokenize(text):
     pass
+# def save(filepath):
+#     if(filepath):
+#         try:
+#             with open(filepath, "wb") as f:
+#                 cp.dump(self.final_model, f)
+#         except Exception as e:
+#             print('Failed: ',e)
+#     else:
+#         print('invalid path')
+        
+# def load(filepath):
+#     if(filepath and os.path.exists(filepath)):
+#         try:
+#             with open(filepath, "rb") as f:
+#                 self.model=cp.load(f)
+#                 self.is_loaded=True
 
+#         except Exception as e:
+#             print('Failed: ',e) 
 
 def build_model(estimator):
 
@@ -164,45 +188,27 @@ def build_model(estimator):
     }
         
     model = OneVsRestClassifier(GridSearchCV(estimator, param_grid=params, cv=5, iid=False
-                                             ,verbose=1,scoring=scoring,refit='Precision_macro'))
+                    ,verbose=1,scoring=scoring,refit='Precision_macro',n_jobs=-1),n_jobs=-1)
     class new_model():
         def __init__(self,old_model):
             self.model=old_model
             self.is_trained=[]
             self.is_loaded=False
+            self.final_model=None
+            self.category_names=None
+            self.params=None
         def train(self,X_train_vec, y_train_vec):
-            
-            for i in range(0,y_train_vec.shape[1]-1,1):
-                print('Training category number: ',i+1)
-                self.model.fit(X_train_vec, y_train_vec[:,i]) 
-                self.is_trained.append(True)
+            self.model.fit(X_train_vec, y_train_vec) 
+            self.is_trained.append(True)
   
-            return(self.model)
-        def save(self,filepath):
-            if(filepath):
-                try:
-                    with open(filepath, "wb") as f:
-                        cp.dump(self.model, f)
-                except Exception as e:
-                    print('Failed: ',e)
-            else:
-                print('invalid path')
-        def load(self,filepath):
-            if(filepath and os.path.exists(filepath)):
-                try:
-                    with open(filepath, "rb") as f:
-                        self.model=cp.load(f)
-                        self.is_loaded=True
-                        
-                except Exception as e:
-                    print('Failed: ',e)        
+            return(self.model)       
 
         def evaluate(self,X_test_vec, y_test_vec, category_names):
             cms=[]
             if(all(self.is_trained) or self.is_loaded):
+                predicted = self.model.predict(X_test_vec).T
                 for i,category in enumerate(category_names):
-                    predicted = self.model.predict(X_test_vec)
-                    cm=ConfusionMatrix(y_test_vec[:,i],predicted)
+                    cm=ConfusionMatrix(y_test_vec[:,i],predicted[i])
                     cms.append(cm)
                 to_include=['Overall ACC','F1 Micro','F1 Macro','PPV Macro','PPV Micro']
                 results=pd.DataFrame.from_dict([cm.overall_stat for cm in cms]).loc[:,to_include].replace('None',0).fillna(0)
@@ -211,6 +217,10 @@ def build_model(estimator):
                 return(results,cms)
             else:
                 print('Model has not been trained.')
+        def oracle (self,X_pred_vec):
+            predicted_a = self.model.predict(X_pred_vec)
+            predicted_p = self.model.predict_proba(X_pred_vec)
+            return(predicted_a,predicted_p)
             
     
     final_model=new_model(model)
@@ -269,13 +279,26 @@ def main():
         model = build_model(estimator)
         
         print('Training model...')
+        model.category_names=category_names.values
         model.train(X_train_vec, y_train_vec)
+        model.params=model.model.get_params(deep=True)
         
         print('Evaluating model...')
         results,cms=model.evaluate(X_test_vec, y_test_vec, category_names)
 
         print('Saving model...\n    MODEL: {}'.format(model_filepath))
-        model.save(model_filepath)
+        with open(model_filepath, "wb") as f:
+            cp.dump(model, f)
+#        nlp = spacy.load("en_vectors_web_lg")
+#        text="This is the beginning of the rainy season and it is expected that heavier rains will come in the September/October, further exacerbating the situation, OCHA added."
+#        to_predict=pd.DataFrame()
+#        to_predict['message']=np.array([text])
+#        vec,_,_,_=doc2vec(to_predict.message.values,[0],nlp)
+#        predicted_a,predicted_p = model.oracle(vec)
+#        print(predicted_a,predicted_p)
+#        with open(model_filepath, "rb") as f:
+#            model=cp.load(f) 
+        
 
         print('Trained model saved!')
 
