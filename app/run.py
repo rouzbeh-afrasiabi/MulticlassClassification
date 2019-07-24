@@ -6,8 +6,6 @@ import json
 import plotly
 import pandas as pd
 
-from nltk.stem import WordNetLemmatizer
-from nltk.tokenize import word_tokenize
 
 from flask import Flask
 from flask import render_template, request, jsonify
@@ -31,16 +29,6 @@ def get_image(ax):
     encoded_file = base64.b64encode(buf.read()).decode('ascii')
     return(encoded_file)
     
-def tokenize(text):
-    tokens = word_tokenize(text)
-    lemmatizer = WordNetLemmatizer()
-
-    clean_tokens = []
-    for tok in tokens:
-        clean_tok = lemmatizer.lemmatize(tok).lower().strip()
-        clean_tokens.append(clean_tok)
-
-    return clean_tokens
 
 # load data
 engine = create_engine('sqlite:///../data/DisasterResponse.db')
@@ -55,46 +43,24 @@ df = pd.read_sql_table('Main', engine)
 with open("../models/classifier.pkl", 'rb') as f:
     model=cp.load(f)
 nlp = spacy.load("en_vectors_web_lg")
+seq_lens=np.unique(df.message.apply(lambda x:len(nlp(x))).values,return_counts=True)
+counts_df=pd.DataFrame(np.array(seq_lens).T)
+
 
 # index webpage displays cool visuals and receives user input text for model
 @app.route('/')
 @app.route('/index')
 def index():
-    
-    # extract data needed for visuals
-    # TODO: Below is an example - modify to extract data for your own visuals
-    genre_counts = df.groupby('genre').count()['message']
-    genre_names = list(genre_counts.index)
-    
-    # create visuals
-    # TODO: Below is an example - modify to create your own visuals
-    graphs = [
-        {
-            'data': [
-                Bar(
-                    x=genre_names,
-                    y=genre_counts
-                )
-            ],
 
-            'layout': {
-                'title': 'Distribution of Message Genres',
-                'yaxis': {
-                    'title': "Count"
-                },
-                'xaxis': {
-                    'title': "Genre"
-                }
-            }
-        }
-    ]
-    
-    # encode plotly graphs in JSON
-    ids = ["graph-{}".format(i) for i, _ in enumerate(graphs)]
-    graphJSON = json.dumps(graphs, cls=plotly.utils.PlotlyJSONEncoder)
-    
-    # render web page with plotly graphs
-    return render_template('master.html', ids=ids, graphJSON=graphJSON)
+    ax=counts_df.plot.hist(x=1,bins=50,legend=False,title="Sequence Length Distribution",figsize=(15,5))
+    counts_img=get_image(ax)
+    ax_1=pd.DataFrame(df.iloc[:,4:].sum()).plot.bar(figsize=(15,5),legend=False,title="Category Counts")
+    cat_counts_img=get_image(ax_1)
+    ax_2=plt.matshow(df.iloc[:,4:].corr())
+    plt.title('Correlation between categories')
+    corr_img=get_image(ax_2)
+    return render_template('master.html',counts_img=counts_img,
+                           cat_counts_img=cat_counts_img,corr_img=corr_img)
 
 
 # web page that handles user query and displays model results
@@ -119,9 +85,7 @@ def go():
             sort_values('prb.',ascending=False).\
             iloc[-1:]['prb.'].values.item()
     ax_1.axvline(x=threshold,color='red')
-    print(p_threshold)
     ax_1.axvline(x=p_threshold,color='blue')
-    ax_2=res_df.plot.bar(x='cat.',y='abs.',figsize=(15,10),fontsize=.5)
     prb_image=get_image(ax_1)
     #.loc[res_df['prb.']>=threshold]
     res_table=res_df.\

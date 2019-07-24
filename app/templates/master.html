@@ -33,8 +33,38 @@
 </div>
 
 
+<body>
+{% if counts_img%}
+<div class="form-group">
+    &nbsp;&nbsp;
+</div>
+
+<div class="container">
+  <div class="col-sm">
+    <div class="thumbnail">
+        <img  class="rounded" src="data:image/png;base64,{{counts_img}}"   style="width:70%;height:70%;" ></img>
+    </div>
+  </div>
+  <div class="col-sm">
+    <div class="thumbnail">
+        <img  class="rounded" src="data:image/png;base64,{{cat_counts_img}}"    style="width:70%;height:70%;" ></img>
+    </div>
+  </div>
+  <div class="col-sm">
+    <div class="thumbnail">
+        <img  class="rounded" src="data:image/png;base64,{{corr_img}}"   style="width:30%;height:30%;" ></img>
+    </div>
+  </div>
+
+</div>
+{% endif %}
+
+
+
+
 
 {% block message %}
 {% endblock %}
 </body>
 </html>
+

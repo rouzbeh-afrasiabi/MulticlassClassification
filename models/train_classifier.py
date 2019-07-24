@@ -146,7 +146,7 @@ def doc2vec(target_docs,target_categories,nlp):
             doc_vec.append(new_doc.vector)
         if((i+1)%1000==0 and i>0):
             print(i+1,' records processed')
-    word_vec_flat=word_vec.reshape(np.array(word_vec).shape[0],-1)
+    word_vec_flat=np.array(word_vec).reshape(np.array(word_vec).shape[0],-1)
     new_categories=np.delete(target_categories, delete_index,axis=0)
     print('Finished!!')
     return(doc_vec,word_vec_flat,new_categories,cleaned_docs,all_removed_tokens)
