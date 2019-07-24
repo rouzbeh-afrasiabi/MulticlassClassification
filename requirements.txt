@@ -1,7 +1,6 @@
 nltk==3.2.5
 pandas==0.23.3
 plotly==2.0.15
-https://github.com/explosion/spacy-models/releases/download/en_vectors_web_lg-2.1.0/en_vectors_web_lg-2.1.0.tar.gz#en_core_web_sm
 numpy==1.16.4
 SQLAlchemy==1.2.18
 pycm==2.2
