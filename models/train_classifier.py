@@ -29,6 +29,16 @@ from sklearn.preprocessing import MultiLabelBinarizer
 #'https://github.com/explosion/spacy-models/releases/download/en_vectors_web_lg-2.1.0/en_vectors_web_lg-2.1.0.tar.gz'
 
 def load_data(database_filepath="data/DisasterResponse.db",table_name="Main"):
+    """
+    Loads data 
+    
+    Arguments:
+        database_filepath: database file path. 
+        table_name: table name to load. 
+    
+    Returns:
+        X:data ,Y:target ,category_names:categories
+    """
     engine = create_engine('sqlite:///'+database_filepath)
     df = pd.read_sql_table(table_name, engine)
     #a new feature named 'unknown' is added to detect records with all features set to 0 
@@ -41,6 +51,15 @@ def load_data(database_filepath="data/DisasterResponse.db",table_name="Main"):
     return(X,Y,category_names)
 
 def clean_text(target_docs):
+    """
+    Cleans an interable object containing test by removing punctuation, stop words and oov.   
+    
+    Arguments:
+        target_docs: interable object containing text.
+    
+    Returns:
+        list containing the cleaned text
+    """
     nlp = spacy.load("en_vectors_web_lg")
     spacy_stopwords = spacy.lang.en.stop_words.STOP_WORDS
     output=[]
@@ -59,6 +78,15 @@ def clean_text(target_docs):
     return(output)
 
 def count2vec(target_docs):
+    """
+    Creates a list containing vector representation of token counts.
+    
+    Arguments:
+        target_docs: interable object containing text.
+    
+    Returns:
+        list containing the count vectors
+    """
     cleaned_docs=clean_text(target_docs)
     CV=CountVectorizer()
     print('CountVectorizer Started...')
@@ -67,6 +95,15 @@ def count2vec(target_docs):
     return(results.toarray())
 
 def tfidf2vec(target_docs,**kwargs):
+    """
+    Creates a list containing vector representation or token TF-IDF.
+    
+    Arguments:
+        target_docs: interable object containing text.
+    
+    Returns:
+        list containing the TF-IDF vectors
+    """
     cleaned_docs=clean_text(target_docs)
     TF_IDF=TfidfVectorizer(**kwargs)
     print('TfidfVectorizer Started...')
@@ -75,6 +112,15 @@ def tfidf2vec(target_docs,**kwargs):
     return(results.toarray())
 
 def spell_check(target,nlp):
+    """
+    Performs spell check on a text.
+    
+    Arguments:
+        target: interable object containing text.
+        nlp: spacy language model that has been loaded through nlp.load()
+    Returns:
+        spell check text
+    """
     from spellchecker import SpellChecker
     spell_checked=[]
     spell = SpellChecker()
@@ -91,17 +137,45 @@ def spell_check(target,nlp):
     lemmatized=[token.lemma_.strip() for token in new_doc]
     return(" ".join(lemmatized))
 def remove_punct(target):
+    """
+    Removes punctuation from a text.
+    
+    Arguments:
+        target: interable object containing text.
+    Returns:
+        punctuation striped text 
+    """
     import string
     output=target.translate(str.maketrans(string.punctuation,
                  ' ' * len(string.punctuation))).replace(' '*4, ' ').replace(' '*3, ' ').replace(' '*2, ' ').strip()
     return(output)
     
 def trp(doc,n,pad=['@PAD@']):
+    """
+    Truncates and pads input doc
+    
+    Arguments:
+        doc: interable object containing text.
+        pad: pad sequence e.g. @PAD@
+    Returns:
+        truncated and padded document 
+    """
     l=[token  for token in doc if token.has_vector]
     pad_trunc=list(l[:n])+list(pad)*(n-len(l))
     return(pad_trunc)
     
 def doc2vec(target_docs,target_categories,nlp):
+    """
+    Cleans the target documents and performs preprocessing before transforming 
+    the input into doc_vec,word_vec_flat,new_categories,cleaned_docs,all_removed_tokens
+    
+    Arguments:
+        target_docs: interable object containing text.
+        target_categories: list of categories present in the data
+        nlp: spacy language model that has been loaded through nlp.load() 
+    Returns:
+        doc_vec,word_vec_flat,new_categories,cleaned_docs,all_removed_tokens 
+    """
     spacy_stopwords = spacy.lang.en.stop_words.STOP_WORDS
     doc_vec=[]
     word_vec=[]
@@ -150,26 +224,6 @@ def doc2vec(target_docs,target_categories,nlp):
     new_categories=np.delete(target_categories, delete_index,axis=0)
     print('Finished!!')
     return(doc_vec,word_vec_flat,new_categories,cleaned_docs,all_removed_tokens)
-
-# def save(filepath):
-#     if(filepath):
-#         try:
-#             with open(filepath, "wb") as f:
-#                 cp.dump(self.final_model, f)
-#         except Exception as e:
-#             print('Failed: ',e)
-#     else:
-#         print('invalid path')
-        
-# def load(filepath):
-#     if(filepath and os.path.exists(filepath)):
-#         try:
-#             with open(filepath, "rb") as f:
-#                 self.model=cp.load(f)
-#                 self.is_loaded=True
-
-#         except Exception as e:
-#             print('Failed: ',e) 
 
 def build_model(estimator):
 
@@ -298,15 +352,6 @@ def main():
         print('Saving model...\n    MODEL: {}'.format(model_filepath))
         with open(model_filepath, "wb") as f:
             cp.dump(model, f)
-#        nlp = spacy.load("en_vectors_web_lg")
-#        text="This is the beginning of the rainy season and it is expected that heavier rains will come in the September/October, further exacerbating the situation, OCHA added."
-#        to_predict=pd.DataFrame()
-#        to_predict['message']=np.array([text])
-#        vec,_,_,_=doc2vec(to_predict.message.values,[0],nlp)
-#        predicted_a,predicted_p = model.oracle(vec)
-#        print(predicted_a,predicted_p)
-#        with open(model_filepath, "rb") as f:
-#            model=cp.load(f) 
         
 
         print('Trained model saved!')
