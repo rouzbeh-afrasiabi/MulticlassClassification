@@ -1,7 +1,7 @@
 # Multiclass Classification - Crisis NLP
 
 ### Intoduction:
-This repo provides an example of a multi-class classification which can be utilized for catagorizing text messages related to natural disasters. The main goal is to use the model for facilitating humanitarian aid and reducing response time. The dataset used here is a multi-language dataset provided by figure8 (https://www.figure-eight.com/dataset/combined-disaster-response-data/). Other dataset are also available through https://crisisnlp.qcri.org/.
+This repo provides an example of a multi-class classification which can be utilized for catagorizing text messages related to natural disasters. The main goal is to use the model for facilitating humanitarian aid and reducing response time. The dataset used here is a multi-language dataset provided by figure8 (https://www.figure-eight.com/dataset/combined-disaster-response-data/). Other datasets are also available through https://crisisnlp.qcri.org/.
 
 
 
